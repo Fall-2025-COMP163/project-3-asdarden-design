@@ -37,7 +37,11 @@ def add_item_to_inventory(character, item_id):
     # TODO: Implement adding items
     # Check if inventory is full (>= MAX_INVENTORY_SIZE)
     # Add item_id to character['inventory'] list
-    pass
+
+    if len(character['inventory']) >= MAX_INVENTORY_SIZE:
+        raise InventoryFullError("Inventory is full.")
+    character['inventory'].append(item_id)
+    return True
 
 def remove_item_from_inventory(character, item_id):
     """
@@ -53,7 +57,11 @@ def remove_item_from_inventory(character, item_id):
     # TODO: Implement item removal
     # Check if item exists in inventory
     # Remove item from list
-    pass
+
+    if item_id not in character['inventory']:
+        raise ItemNotFoundError(f"Item '{item_id}' not found in inventory.")
+    character['inventory'].remove(item_id)
+    return True
 
 def has_item(character, item_id):
     """
@@ -62,7 +70,11 @@ def has_item(character, item_id):
     Returns: True if item in inventory, False otherwise
     """
     # TODO: Implement item check
-    pass
+
+    if item_id in character['inventory']:
+        return True
+    else:
+        return False
 
 def count_item(character, item_id):
     """
@@ -72,7 +84,10 @@ def count_item(character, item_id):
     """
     # TODO: Implement item counting
     # Use list.count() method
-    pass
+    if item_id in character['inventory']:
+        return character['inventory'].count(item_id)
+    else:
+        return 0
 
 def get_inventory_space_remaining(character):
     """
@@ -81,7 +96,12 @@ def get_inventory_space_remaining(character):
     Returns: Integer representing available slots
     """
     # TODO: Implement space calculation
-    pass
+
+    used = len(character['inventory'])
+    remaining = MAX_INVENTORY_SIZE - used
+    if remaining < 0:
+        remaining = 0
+    return remaining
 
 def clear_inventory(character):
     """
@@ -92,7 +112,10 @@ def clear_inventory(character):
     # TODO: Implement inventory clearing
     # Save current inventory before clearing
     # Clear character's inventory list
-    pass
+
+    removed_items = character['inventory'].copy()
+    character['inventory'].clear()
+    return removed_items
 
 # ============================================================================
 # ITEM USAGE
@@ -122,7 +145,22 @@ def use_item(character, item_id, item_data):
     # Parse effect (format: "stat_name:value" e.g., "health:20")
     # Apply effect to character
     # Remove item from inventory
-    pass
+
+    if not has_item(character, item_id):
+        raise ItemNotFoundError("Item not found in inventory.")
+
+
+    if item_data['type'] != 'consumable':
+        raise InvalidItemTypeError("Item is not a consumable.")
+
+
+    stat, value = parse_item_effect(item_data['effect'])
+    apply_stat_effect(character, stat, value)
+
+
+    remove_item_from_inventory(character, item_id)
+
+    return f"Used {item_id}. {stat} increased by {value}."
 
 def equip_weapon(character, item_id, item_data):
     """
@@ -150,7 +188,36 @@ def equip_weapon(character, item_id, item_data):
     # Parse effect and apply to character stats
     # Store equipped_weapon in character dictionary
     # Remove item from inventory
-    pass
+
+    if not has_item(character, item_id):
+        raise ItemNotFoundError("Weapon not found in inventory.")
+    if item_data['type'] != 'weapon':
+        raise InvalidItemTypeError("Item is not a weapon.")
+
+
+    if character.get('equipped_weapon'):
+        old_weapon = character['equipped_weapon']
+        old_effect = character['equipped_weapon_effect']
+        stat, value = parse_item_effect(old_effect)
+        apply_stat_effect(character, stat, -value)
+
+
+        if len(character['inventory']) >= MAX_INVENTORY_SIZE:
+            raise InventoryFullError("Inventory full, cannot unequip weapon.")
+        character['inventory'].append(old_weapon)
+
+
+    effect = item_data['effect']
+    stat, value = parse_item_effect(effect)
+    apply_stat_effect(character, stat, value)
+
+
+    character['equipped_weapon'] = item_id
+    character['equipped_weapon_effect'] = effect
+    remove_item_from_inventory(character, item_id)
+
+
+    return f"Equipped weapon: {item_id}."
 
 def equip_armor(character, item_id, item_data):
     """
@@ -174,7 +241,36 @@ def equip_armor(character, item_id, item_data):
     """
     # TODO: Implement armor equipping
     # Similar to equip_weapon but for armor
-    pass
+
+    if not has_item(character, item_id):
+        raise ItemNotFoundError("Armor not found in inventory.")
+    if item_data['type'] != 'armor':
+        raise InvalidItemTypeError("Item is not armor.")
+
+
+    if character.get('equipped_armor'):
+        old_armor = character['equipped_armor']
+        old_effect = character['equipped_armor_effect']
+        stat, value = parse_item_effect(old_effect)
+        apply_stat_effect(character, stat, -value)
+
+
+        if len(character['inventory']) >= MAX_INVENTORY_SIZE:
+            raise InventoryFullError("Inventory full, cannot unequip armor.")
+        character['inventory'].append(old_armor)
+
+
+    effect = item_data['effect']
+    stat, value = parse_item_effect(effect)
+    apply_stat_effect(character, stat, value)
+
+
+    character['equipped_armor'] = item_id
+    character['equipped_armor_effect'] = effect
+    remove_item_from_inventory(character, item_id)
+
+
+    return f"Equipped armor: {item_id}."
 
 def unequip_weapon(character):
     """
@@ -188,7 +284,29 @@ def unequip_weapon(character):
     # Remove stat bonuses
     # Add weapon back to inventory
     # Clear equipped_weapon from character
-    pass
+
+    if not character.get('equipped_weapon'):
+        return None
+
+
+    weapon = character['equipped_weapon']
+    effect = character['equipped_weapon_effect']
+
+
+    stat, value = parse_item_effect(effect)
+    apply_stat_effect(character, stat, -value)
+
+
+    if len(character['inventory']) >= MAX_INVENTORY_SIZE:
+        raise InventoryFullError("Inventory full.")
+
+
+    character['inventory'].append(weapon)
+    character['equipped_weapon'] = None
+    character['equipped_weapon_effect'] = None
+
+
+    return weapon
 
 def unequip_armor(character):
     """
@@ -198,7 +316,29 @@ def unequip_armor(character):
     Raises: InventoryFullError if inventory is full
     """
     # TODO: Implement armor unequipping
-    pass
+
+    if not character.get('equipped_armor'):
+        return None
+
+
+    armor = character['equipped_armor']
+    effect = character['equipped_armor_effect']
+
+
+    stat, value = parse_item_effect(effect)
+    apply_stat_effect(character, stat, -value)
+
+
+    if len(character['inventory']) >= MAX_INVENTORY_SIZE:
+        raise InventoryFullError("Inventory full.")
+
+
+    character['inventory'].append(armor)
+    character['equipped_armor'] = None
+    character['equipped_armor_effect'] = None
+
+
+    return armor
 
 # ============================================================================
 # SHOP SYSTEM
@@ -223,7 +363,21 @@ def purchase_item(character, item_id, item_data):
     # Check if inventory has space
     # Subtract gold from character
     # Add item to inventory
-    pass
+
+    cost = item_data['cost']
+
+
+    if character['gold'] < cost:
+        raise InsufficientResourcesError("Not enough gold.")
+    if len(character['inventory']) >= MAX_INVENTORY_SIZE:
+        raise InventoryFullError("Inventory is full.")
+
+
+    character['gold'] -= cost
+    character['inventory'].append(item_id)
+
+
+    return True
 
 def sell_item(character, item_id, item_data):
     """
@@ -242,7 +396,16 @@ def sell_item(character, item_id, item_data):
     # Calculate sell price (cost // 2)
     # Remove item from inventory
     # Add gold to character
-    pass
+
+    if not has_item(character, item_id):
+        raise ItemNotFoundError("Item not in inventory.")
+
+
+    sell_price = item_data['cost'] // 2
+    remove_item_from_inventory(character, item_id)
+    character['gold'] += sell_price
+
+    return sell_price
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -261,7 +424,11 @@ def parse_item_effect(effect_string):
     # TODO: Implement effect parsing
     # Split on ":"
     # Convert value to integer
-    pass
+
+    parts = effect_string.split(":")
+    stat_name = parts[0]
+    value = int(parts[1])
+    return (stat_name, value)
 
 def apply_stat_effect(character, stat_name, value):
     """
@@ -274,7 +441,13 @@ def apply_stat_effect(character, stat_name, value):
     # TODO: Implement stat application
     # Add value to character[stat_name]
     # If stat is health, ensure it doesn't exceed max_health
-    pass
+
+    character[stat_name] += value
+
+
+    if stat_name == 'health':
+        if character['health'] > character['max_health']:
+            character['health'] = character['max_health']
 
 def display_inventory(character, item_data_dict):
     """
@@ -289,7 +462,21 @@ def display_inventory(character, item_data_dict):
     # TODO: Implement inventory display
     # Count items (some may appear multiple times)
     # Display with item names from item_data_dict
-    pass
+
+    inventory = character['inventory']
+    summary = {}
+
+    for item in inventory:
+        if item not in summary:
+            summary[item] = 1
+        else:
+            summary[item] += 1
+    print("=== INVENTORY LIST ===")
+    for item_id, count in summary.items():
+        item_info = item_data_dict.get(item_id, {})
+        name = item_info.get('name', 'Unknown Item')
+        item_type = item_info.get('type', 'unknown')
+        print(f"{name} ({item_type}) (Count: {count})")
 
 # ============================================================================
 # TESTING
@@ -320,3 +507,77 @@ if __name__ == "__main__":
     # except ItemNotFoundError:
     #     print("Item not found")
 
+    # Test adding items
+    test_char = {'inventory': [], 'gold': 100, 'health': 80, 'max_health': 80}
+    try:
+        add_item_to_inventory(test_char, "health_potion")
+        print(f"Inventory: {test_char['inventory']}")
+    except InventoryFullError:
+        print("Inventory is full!")
+    # Test using items
+    test_item = {
+        'item_id': 'health_potion',
+        'type': 'consumable',
+        'effect': 'health:20'
+    }
+    try:
+        result = use_item(test_char, "health_potion", test_item)
+        print(result)
+    except ItemNotFoundError:
+        print("Item not found")
+    except InvalidItemTypeError:
+        print("Invalid item type")
+
+
+    # Test equipping weapon (wrapped in try/except)
+    test_weapon = {'item_id': 'sword_1', 'type': 'weapon', 'effect': 'strength:5'}
+    try:
+        add_item_to_inventory(test_char, 'sword_1')
+    except InventoryFullError:
+        print("Inventory is full, cannot add weapon for test")
+
+
+    try:
+        print(equip_weapon(test_char, 'sword_1', test_weapon))
+    except ItemNotFoundError:
+        print("Weapon not found")
+    except InvalidItemTypeError:
+        print("Invalid weapon type")
+
+
+    # Test equipping armor (wrapped in try/except)
+    test_armor = {'item_id': 'armor_1', 'type': 'armor', 'effect': 'max_health:10'}
+    try:
+        add_item_to_inventory(test_char, 'armor_1')
+    except InventoryFullError:
+        print("Inventory is full, cannot add armor for test")
+
+
+    try:
+        print(equip_armor(test_char, 'armor_1', test_armor))
+    except ItemNotFoundError:
+        print("Armor not found")
+    except InvalidItemTypeError:
+        print("Invalid armor type")
+
+
+    # Test selling an item (wrapped in try/except)
+    try:
+        add_item_to_inventory(test_char, 'potion_sell')
+    except InventoryFullError:
+        pass
+    test_sell_item = {'item_id': 'potion_sell', 'type': 'consumable', 'effect': 'health:5', 'cost': 20}
+    try:
+        gold = sell_item(test_char, 'potion_sell', test_sell_item)
+        print(f"Sold potion for {gold} gold")
+    except ItemNotFoundError:
+        print("Item to sell not found")
+
+    # Display inventory at end
+    item_data_dict = {
+        'health_potion': test_item,
+        'sword_1': test_weapon,
+        'armor_1': test_armor,
+        'potion_sell': test_sell_item
+    }
+display_inventory(test_char, item_data_dict)
