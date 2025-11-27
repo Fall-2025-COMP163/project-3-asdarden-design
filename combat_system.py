@@ -15,7 +15,7 @@ from custom_exceptions import (
     CharacterDeadError,
     AbilityOnCooldownError
 )
-
+Import Random
 # ============================================================================
 # ENEMY DEFINITIONS
 # ============================================================================
@@ -34,7 +34,39 @@ def create_enemy(enemy_type):
     """
     # TODO: Implement enemy creation
     # Return dictionary with: name, health, max_health, strength, magic, xp_reward, gold_reward
-    pass
+
+    if enemy_type == "goblin":
+        return {
+            "name": "Goblin",
+            "health": 50,
+            "max_health": 50,
+            "strength": 8,
+            "magic": 2,
+            "xp_reward": 25,
+            "gold_reward": 10
+        }
+    elif enemy_type == "orc":
+        return {
+            "name": "Orc",
+            "health": 80,
+            "max_health": 80,
+            "strength": 12,
+            "magic": 5,
+            "xp_reward": 50,
+            "gold_reward": 25
+        }
+    elif enemy_type == "dragon":
+        return {
+            "name": "Dragon",
+            "health": 200,
+            "max_health": 200,
+            "strength": 25,
+            "magic": 15,
+            "xp_reward": 200,
+            "gold_reward": 100
+        }
+    else:
+        raise InvalidTargetError(f"Enemy type '{enemy_type}' not recognized.")
 
 def get_random_enemy_for_level(character_level):
     """
@@ -49,7 +81,13 @@ def get_random_enemy_for_level(character_level):
     # TODO: Implement level-appropriate enemy selection
     # Use if/elif/else to select enemy type
     # Call create_enemy with appropriate type
-    pass
+
+    if character_level <= 2:
+        return create_enemy("goblin")
+    elif 3 <= character_level <= 5:
+        return create_enemy("orc")
+    else:
+        return create_enemy("dragon")
 
 # ============================================================================
 # COMBAT SYSTEM
@@ -68,7 +106,11 @@ class SimpleBattle:
         # Store character and enemy
         # Set combat_active flag
         # Initialize turn counter
-        pass
+
+        self.character = character
+        self.enemy = enemy
+        self.combat_active = True
+        self.turn_counter = 1
     
     def start_battle(self):
         """
@@ -83,7 +125,26 @@ class SimpleBattle:
         # Check character isn't dead
         # Loop until someone dies
         # Award XP and gold if player wins
-        pass
+        if self.character['health'] <= 0:
+            raise CharacterDeadError("Character is dead and cannot fight.")
+            
+        while self.combat_active:
+            self.player_turn()
+            if self.check_battle_end():
+                break
+            self.enemy_turn()
+            if self.check_battle_end():
+                break
+            self.turn_counter += 1
+
+        winner = self.check_battle_end()
+        rewards = {'xp_gained': 0, 'gold_gained': 0}
+
+        if winner == 'player':
+            rewards['xp_gained'] = self.enemy['xp_reward']
+            rewards['gold_gained'] = self.enemy['gold_reward']
+            self.character['gold'] += self.enemy['gold_reward']
+        return {'winner': winner, 'xp_gained': rewards['xp_gained'], 'gold_gained': rewards['gold_gained']}
     
     def player_turn(self):
         """
@@ -101,7 +162,14 @@ class SimpleBattle:
         # Display options
         # Get player choice
         # Execute chosen action
-        pass
+
+        if not self.combat_active:
+            raise CombatNotActiveError("Combat is not active.")
+        # Simple automatic attack for testing purposes
+        damage = self.calculate_damage(self.character, self.enemy)
+        self.apply_damage(self.enemy, damage)
+        display_battle_log(f"{self.character['name']} attacks for {damage} damage.")
+
     
     def enemy_turn(self):
         """
