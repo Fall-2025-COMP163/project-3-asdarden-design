@@ -88,7 +88,7 @@ def load_items(filename="data/items.txt"):
     # TODO: Implement this function
     # Must handle same exceptions as load_quests
 
-   if not os.path.exists(filename):
+    if not os.path.exists(filename):
         raise MissingDataFileError("Item file not found")
 
     items = {}
