@@ -35,7 +35,7 @@ def create_enemy(enemy_type):
     # TODO: Implement enemy creation
     # Return dictionary with: name, health, max_health, strength, magic, xp_reward, gold_reward
 
-   if enemy_type == 'goblin':
+    if enemy_type == 'goblin':
         return {'name': 'Goblin', 'health': 50, 'max_health': 50, 'strength': 8, 'magic': 2, 'xp_reward': 25, 'gold_reward': 10}
     elif enemy_type == 'orc':
         return {'name': 'Orc', 'health': 80, 'max_health': 80, 'strength': 12, 'magic': 5, 'xp_reward': 50, 'gold_reward': 25}
@@ -58,7 +58,7 @@ def get_random_enemy_for_level(character_level):
     # Use if/elif/else to select enemy type
     # Call create_enemy with appropriate type
 
-   if character_level <= 2:
+    if character_level <= 2:
         return create_enemy('goblin')
     elif character_level <= 5:
         return create_enemy('orc')
@@ -101,7 +101,7 @@ class SimpleBattle:
         # Check character isn't dead
         # Loop until someone dies
         # Award XP and gold if player wins
-       if self.character['health'] <= 0:
+        if self.character['health'] <= 0:
             raise CharacterDeadError("Character is dead and cannot fight.")
         
         while self.combat_active:
@@ -160,7 +160,7 @@ class SimpleBattle:
         # Check combat is active
         # Calculate damage
         # Apply to character
-       if not self.combat_active:
+        if not self.combat_active:
             raise CombatNotActiveError("Cannot take turn, combat is not active.")
         
         damage = self.calculate_damage(self.enemy, self.character)
