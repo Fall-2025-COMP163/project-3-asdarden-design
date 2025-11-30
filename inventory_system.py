@@ -38,7 +38,7 @@ def add_item_to_inventory(character, item_id):
     # Check if inventory is full (>= MAX_INVENTORY_SIZE)
     # Add item_id to character['inventory'] list
 
-   if 'inventory' not in character:
+    if 'inventory' not in character:
         character['inventory'] = []
 
     if len(character['inventory']) >= MAX_INVENTORY_SIZE:
@@ -337,7 +337,7 @@ def unequip_armor(character):
     """
     # TODO: Implement armor unequipping
 
-   if not character.get('equipped_armor'):
+    if not character.get('equipped_armor'):
         return None
 
     armor = character['equipped_armor']
@@ -447,7 +447,7 @@ def parse_item_effect(effect_string):
     # Split on ":"
     # Convert value to integer
 
-   if not isinstance(effect_string, str) or ":" not in effect_string:
+    if not isinstance(effect_string, str) or ":" not in effect_string:
         return ("", 0)
     parts = effect_string.split(":", 1)
     stat_name = parts[0].strip()
