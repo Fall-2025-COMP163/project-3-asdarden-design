@@ -453,14 +453,14 @@ def parse_item_effect(effect_string):
     # Convert value to integer
 
     if not isinstance(effect_string, str) or ":" not in effect_string:
-        return "", 0
+        return ("", 0)
     parts = effect_string.split(":", 1)
     stat_name = parts[0].strip()
     try:
         value = int(parts[1].strip())
     except Exception:
         value = 0
-    return stat_name, value
+    return (stat_name, value)
 
 def apply_stat_effect(character, stat_name, value):
     """
@@ -480,13 +480,14 @@ def apply_stat_effect(character, stat_name, value):
     if stat_name not in character:
         character[stat_name] = 0
 
+    character[stat_name] += value
+
     if stat_name == 'health':
-        max_hp = character.get('max_health', 0)
-        character['health'] = min(character.get('health', 0) + value, max_hp)
+        max_hp = character.get('max_health', character['health'])
+        if character['health'] > max_hp:
+            character['health'] = max_hp
         if character['health'] < 0:
             character['health'] = 0
-    else:
-        character[stat_name] += value
 
 def display_inventory(character, item_data_dict):
     """
