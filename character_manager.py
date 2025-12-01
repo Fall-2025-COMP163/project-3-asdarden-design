@@ -62,7 +62,7 @@ def create_character(name, character_class):
 
     return {
         "name": name,
-        "class": character_class,
+        "class": character_class.lower(),
         "level": 1,
         "health": stats["health"],
         "max_health": stats["health"],
@@ -321,11 +321,9 @@ def heal_character(character, amount):
     # Calculate actual healing (don't exceed max_health)
     # Update character health
     before = character["health"]
-    after = before + amount
-    if after > character["max_health"]:
-        after = character["max_health"]
-    character["health"] = after
-    return after - before
+    new_health = min(character["max_health"], before + amount)
+    character["health"] = new_health
+    return new_health - before
 
 def is_character_dead(character):
     """
