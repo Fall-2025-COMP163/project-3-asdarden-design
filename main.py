@@ -53,13 +53,11 @@ def main_menu():
     print("1. New Game")
     print("2. Load Game")
     print("3. Exit")
-    
     while True:
         choice = input("Enter choice (1-3): ").strip()
         if choice in ("1", "2", "3"):
             return int(choice)
-        else:
-            print("Invalid input. Please enter 1, 2, or 3.")
+        print("Invalid input. Please enter 1, 2, or 3.")
 
 
 def new_game():
@@ -81,12 +79,10 @@ def new_game():
     # Handle InvalidCharacterClassError
     # Save character
     # Start game loop
-        print("\n=== NEW GAME ===")
+    print("\n=== NEW GAME ===")
     
-    # Get character name
     name = input("Enter your character's name: ").strip()
     
-    # Get character class
     valid_classes = ["Warrior", "Mage", "Rogue", "Cleric"]
     while True:
         print("Choose a class:")
@@ -96,10 +92,8 @@ def new_game():
         if class_choice in [str(i) for i in range(1, len(valid_classes)+1)]:
             character_class = valid_classes[int(class_choice)-1]
             break
-        else:
-            print("Invalid choice. Try again.")
+        print("Invalid choice. Try again.")
     
-    # Create character
     try:
         current_character = character_manager.create_character(name, character_class)
         character_manager.save_character(current_character)
@@ -107,8 +101,7 @@ def new_game():
     except InvalidCharacterClassError as e:
         print(f"Error: {e}")
         return
-    
-    # Start game loop
+
     game_loop()
 
 
@@ -128,7 +121,6 @@ def load_game():
     # Try to load character with character_manager.load_character()
     # Handle CharacterNotFoundError and SaveFileCorruptedError
     # Start game loop
-    
     print("\n=== LOAD GAME ===")
     saved_characters = character_manager.list_saved_characters()
     
@@ -145,8 +137,7 @@ def load_game():
         if choice.isdigit() and 1 <= int(choice) <= len(saved_characters):
             selected_name = saved_characters[int(choice)-1]
             break
-        else:
-            print("Invalid choice. Try again.")
+        print("Invalid choice. Try again.")
     
     try:
         current_character = character_manager.load_character(selected_name)
@@ -182,7 +173,6 @@ def game_loop():
     
     while game_running:
         choice = game_menu()
-        
         if choice == 1:
             view_character_stats()
         elif choice == 2:
@@ -197,8 +187,6 @@ def game_loop():
             save_game()
             print("Game saved. Goodbye!")
             game_running = False
-        else:
-            print("Invalid choice.")
             
 def game_menu():
     """
@@ -222,13 +210,11 @@ def game_menu():
     print("4. Explore")
     print("5. Shop")
     print("6. Save and Quit")
-    
     while True:
         choice = input("Enter choice (1-6): ").strip()
         if choice in [str(i) for i in range(1, 7)]:
             return int(choice)
-        else:
-            print("Invalid input. Enter a number between 1 and 6.")
+        print("Invalid input. Enter a number between 1 and 6.")
 
 # ============================================================================
 # GAME ACTIONS
@@ -254,8 +240,7 @@ def view_character_stats():
     print(f"Experience: {char['experience']}")
     print(f"Gold: {char['gold']}")
     print(f"Inventory: {', '.join(char['inventory']) if char['inventory'] else 'Empty'}")
-    print(f"Active Quests: {', '.join(char['active_quests']) if char['active_quests'] else 'None'}")
-    print(f"Completed Quests: {', '.join(char['completed_quests']) if char['completed_quests'] else 'None'}")
+    quest_handler.display_character_quest_progress(current_character, all_quests)
 
 def view_inventory():
     """Display and manage inventory"""
@@ -266,32 +251,8 @@ def view_inventory():
     # Options: Use item, Equip weapon/armor, Drop item
     # Handle exceptions from inventory_system
     inventory = current_character["inventory"]
-
-    if not inventory:
-        print("Your inventory is empty.")
-        return
-
-    print("=== Inventory ===")
-    for i, item_name in enumerate(inventory, start=1):
-        print(f"{i}. {item_name}")
-
-    print("Enter the number of an item to use/drop, or 0 to return.")
-    choice = input("> ")
-
-    if not choice.isdigit():
-        print("Invalid input.")
-        return
-
-    choice = int(choice)
-    if choice == 0:
-        return
-    elif 1 <= choice <= len(inventory):
-        selected_item = inventory[choice - 1]
-        print(f"You selected {selected_item}.")
-        # Example usage: call inventory_system.use_item(current_character, selected_item)
-    else:
-        print("Invalid choice.")
-
+    inventory_system.display_inventory(current_character, all_items)
+    
 def quest_menu():
     """Quest management menu"""
     global current_character, all_quests
@@ -306,64 +267,46 @@ def quest_menu():
     #   6. Complete Quest (for testing)
     #   7. Back
     # Handle exceptions from quest_handler
-    print("=== Quest Menu ===")
+    print("\n=== QUEST MENU ===")
     print("1. View Active Quests")
     print("2. View Completed Quests")
     print("3. Accept Quest")
     print("4. Abandon Quest")
     print("5. Back")
-    choice = input("> ")
-
+    choice = input("> ").strip()
+    
     if choice == "1":
-        active = current_character["active_quests"]
-        if not active:
-            print("No active quests.")
-        else:
-            print("Active Quests:")
-            for quest_name in active:
-                print(f"- {quest_name}")
+        active = quest_handler.get_active_quests(current_character, all_quests)
+        quest_handler.display_quest_list(active)
     elif choice == "2":
-        completed = current_character["completed_quests"]
-        if not completed:
-            print("No completed quests.")
-        else:
-            print("Completed Quests:")
-            for quest_name in completed:
-                print(f"- {quest_name}")
+        completed = quest_handler.get_completed_quests(current_character, all_quests)
+        quest_handler.display_quest_list(completed)
     elif choice == "3":
-        # Show available quests not already accepted or completed
-        available = [q for q in all_quests if q not in current_character["active_quests"] and q not in current_character["completed_quests"]]
+        available = quest_handler.get_available_quests(current_character, all_quests)
         if not available:
             print("No quests available.")
             return
-        print("Available Quests:")
-        for i, quest_name in enumerate(available, start=1):
-            print(f"{i}. {quest_name}")
+        for i, q in enumerate(available, start=1):
+            print(f"{i}. {q['title']} (Level {q['required_level']})")
         sel = input("Enter quest number to accept, or 0 to cancel: ")
         if sel.isdigit():
             sel = int(sel)
             if 1 <= sel <= len(available):
-                current_character["active_quests"].append(available[sel-1])
-                print(f"Accepted quest: {available[sel-1]}")
+                quest_handler.accept_quest(current_character, available[sel-1]['quest_id'], all_quests)
+                print(f"Accepted quest: {available[sel-1]['title']}")
     elif choice == "4":
-        # Abandon active quest
-        active = current_character["active_quests"]
+        active = quest_handler.get_active_quests(current_character, all_quests)
         if not active:
             print("No active quests to abandon.")
             return
-        print("Active Quests:")
-        for i, quest_name in enumerate(active, start=1):
-            print(f"{i}. {quest_name}")
+        for i, q in enumerate(active, start=1):
+            print(f"{i}. {q['title']}")
         sel = input("Enter quest number to abandon, or 0 to cancel: ")
         if sel.isdigit():
             sel = int(sel)
             if 1 <= sel <= len(active):
-                abandoned = current_character["active_quests"].pop(sel-1)
-                print(f"Abandoned quest: {abandoned}")
-    elif choice == "5":
-        return
-    else:
-        print("Invalid choice.")
+                quest_handler.abandon_quest(current_character, active[sel-1]['quest_id'])
+                print(f"Abandoned quest: {active[sel-1]['title']}")
 
 def explore():
     """Find and fight random enemies"""
@@ -374,7 +317,18 @@ def explore():
     # Start combat with combat_system.SimpleBattle
     # Handle combat results (XP, gold, death)
     # Handle exceptions
-    pass
+    enemy = combat_system.generate_enemy(current_character['level'])
+    print(f"A wild {enemy['name']} appears!")
+    try:
+        result = combat_system.simple_battle(current_character, enemy)
+        if result['status'] == "defeat":
+            handle_character_death()
+        else:
+            character_manager.gain_experience(current_character, result['xp'])
+            character_manager.add_gold(current_character, result['gold'])
+            print(f"Defeated {enemy['name']}! Gained {result['xp']} XP and {result['gold']} gold.")
+    except CombatError as e:
+        print(f"Combat error: {e}")
 
 def shop():
     """Shop menu for buying/selling items"""
@@ -385,77 +339,9 @@ def shop():
     # Show current gold
     # Options: Buy item, Sell item, Back
     # Handle exceptions from inventory_system
-    if not all_items:
-        print("No items available in the shop.")
-        return
-
-    while True:
-        print(f"=== Shop Menu (Gold: {current_character['gold']}) ===")
-        print("1. Buy Item")
-        print("2. Sell Item")
-        print("3. Back")
-        choice = input("> ")
-
-        if choice == "1":
-            # Buying
-            print("Items available for purchase:")
-            purchasable_items = [item for item in all_items if "price" in all_items[item]]
-            if not purchasable_items:
-                print("No items to buy.")
-                continue
-            for i, item_name in enumerate(purchasable_items, start=1):
-                price = all_items[item_name]["price"]
-                print(f"{i}. {item_name} (Price: {price})")
-            sel = input("Enter item number to buy, or 0 to cancel: ")
-            if sel.isdigit():
-                sel = int(sel)
-                if sel == 0:
-                    continue
-                elif 1 <= sel <= len(purchasable_items):
-                    item_to_buy = purchasable_items[sel - 1]
-                    price = all_items[item_to_buy]["price"]
-                    try:
-                        character_manager.add_gold(current_character, -price)
-                        current_character["inventory"].append(item_to_buy)
-                        print(f"Bought {item_to_buy} for {price} gold.")
-                    except ValueError:
-                        print("Not enough gold.")
-                else:
-                    print("Invalid choice.")
-            else:
-                print("Invalid input.")
-
-        elif choice == "2":
-            # Selling
-            inventory = current_character["inventory"]
-            if not inventory:
-                print("You have no items to sell.")
-                continue
-            print("Your inventory:")
-            for i, item_name in enumerate(inventory, start=1):
-                price = all_items.get(item_name, {}).get("price", 0)
-                sell_price = price // 2
-                print(f"{i}. {item_name} (Sell Price: {sell_price})")
-            sel = input("Enter item number to sell, or 0 to cancel: ")
-            if sel.isdigit():
-                sel = int(sel)
-                if sel == 0:
-                    continue
-                elif 1 <= sel <= len(inventory):
-                    item_to_sell = inventory.pop(sel - 1)
-                    price = all_items.get(item_to_sell, {}).get("price", 0)
-                    sell_price = price // 2
-                    character_manager.add_gold(current_character, sell_price)
-                    print(f"Sold {item_to_sell} for {sell_price} gold.")
-                else:
-                    print("Invalid choice.")
-            else:
-                print("Invalid input.")
-
-        elif choice == "3":
-            break
-        else:
-            print("Invalid choice.")
+    
+    inventory_system.shop_menu(current_character, all_items)
+    
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -484,7 +370,7 @@ def load_game_data():
     # Handle MissingDataFileError, InvalidDataFormatError
     # If files missing, create defaults with game_data.create_default_data_files()
 
-    try:
+   try:
         all_quests = game_data.load_quests()
         all_items = game_data.load_items()
     except (MissingDataFileError, InvalidDataFormatError):
@@ -504,7 +390,7 @@ def handle_character_death():
     # If quit: set game_running = False
 
     print(f"\n{current_character['name']} has fallen!")
-    print("1. Revive (costs gold)")
+    print("1. Revive (50 gold)")
     print("2. Quit")
     while True:
         choice = input("Enter choice (1-2): ").strip()
@@ -514,14 +400,11 @@ def handle_character_death():
                 character_manager.revive_character(current_character)
                 print(f"{current_character['name']} has been revived with 50% health.")
                 return
-            else:
-                print("Not enough gold to revive!")
+            print("Not enough gold!")
         elif choice == "2":
             game_running = False
             print("Game over.")
             return
-        else:
-            print("Invalid choice. Enter 1 or 2.")
 
 def display_welcome():
     """Display welcome message"""
