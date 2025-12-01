@@ -16,7 +16,7 @@ from custom_exceptions import (
     QuestNotActiveError,
     InsufficientLevelError
 )
-
+import character_manager
 # ============================================================================
 # QUEST MANAGEMENT
 # ============================================================================
@@ -100,33 +100,49 @@ def complete_quest(character, quest_id, quest_data_dict):
     # Add to completed_quests
     # Grant rewards (use character_manager.gain_experience and add_gold)
     # Return reward summary
+    # 1 — Quest must exist
     if quest_id not in quest_data_dict:
         raise QuestNotFoundError(f"Quest '{quest_id}' not found.")
 
-    # Must be active to complete
-    if quest_id not in character['active_quests']:
-        raise QuestNotActiveError(f"Quest '{quest_id}' not active.")
-
     quest = quest_data_dict[quest_id]
 
-    # Remove from active
+    # 2 — Quest must be active
+    if quest_id not in character['active_quests']:
+        raise QuestNotActiveError(f"Quest '{quest_id}' is not active.")
+
+    # 3 — Cannot complete if already completed
+    if quest_id in character['completed_quests']:
+        raise QuestAlreadyCompletedError(f"Quest '{quest_id}' already completed.")
+
+    # 4 — Level requirement check
+    if character['level'] < quest['required_level']:
+        raise InsufficientLevelError(f"Level {quest['required_level']} required.")
+
+    # 5 — Prerequisite must be completed
+    prereq = quest['prerequisite']
+    if prereq != "NONE" and prereq not in character['completed_quests']:
+        raise QuestRequirementsNotMetError(
+            f"Prerequisite '{prereq}' not completed."
+        )
+
+    # 6 — Remove from active quests
     character['active_quests'].remove(quest_id)
 
-    # Mark completed
+    # 7 — Add to completed quests
     character['completed_quests'].append(quest_id)
 
-    # Grant rewards (these functions are in character_manager.py)
-    # main.py will handle importing them.
-    # character_manager.gain_experience(character, quest['reward_xp'])
-    # character_manager.add_gold(character, quest['reward_gold'])
+    # 8 — Grant rewards
+    reward_xp = quest['reward_xp']
+    reward_gold = quest['reward_gold']
 
-    # Since we can’t import, apply rewards manually:
-    character['experience'] += quest['reward_xp']
-    character['gold'] += quest['reward_gold']
+    character_manager.gain_experience(character, reward_xp)
+    character_manager.add_gold(character, reward_gold)
 
+    # 9 — Return reward summary
     return {
-        "xp": quest['reward_xp'],
-        "gold": quest['reward_gold']
+        'quest_id': quest_id,
+        'reward_xp': reward_xp,
+        'reward_gold': reward_gold
     }
 
 def abandon_quest(character, quest_id):
