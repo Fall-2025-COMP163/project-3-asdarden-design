@@ -121,6 +121,7 @@ def load_game():
     # Try to load character with character_manager.load_character()
     # Handle CharacterNotFoundError and SaveFileCorruptedError
     # Start game loop
+    
     print("\n=== LOAD GAME ===")
     saved_characters = character_manager.list_saved_characters()
     
@@ -150,6 +151,7 @@ def load_game():
         return
     
     game_loop()
+
 
 # ============================================================================
 # GAME LOOP
@@ -250,9 +252,13 @@ def view_inventory():
     # Show current inventory
     # Options: Use item, Equip weapon/armor, Drop item
     # Handle exceptions from inventory_system
-    inventory = current_character["inventory"]
-    inventory_system.display_inventory(current_character, all_items)
     
+    if not all_items:
+        print("Item data not loaded. Cannot display inventory.")
+        return
+    
+    inventory_system.display_inventory(current_character, all_items)
+
 def quest_menu():
     """Quest management menu"""
     global current_character, all_quests
@@ -353,12 +359,16 @@ def save_game():
     
     # TODO: Implement save
     # Use character_manager.save_character()
-    # Handle any file I/O exceptions
+    # Handle any file I/O exceptionsdef save_game():
+    
     try:
         character_manager.save_character(current_character)
         print("Game saved successfully.")
-    except Exception as e:
-        print(f"Error saving game: {e}")
+    except PermissionError:
+        print("Permission denied. Could not save game.")
+    except IOError:
+        print("File I/O error. Could not save game.")
+
 
 def load_game_data():
     """Load all quest and item data from files"""
@@ -388,10 +398,11 @@ def handle_character_death():
     # Offer: Revive (costs gold) or Quit
     # If revive: use character_manager.revive_character()
     # If quit: set game_running = False
-
+    
     print(f"\n{current_character['name']} has fallen!")
     print("1. Revive (50 gold)")
     print("2. Quit")
+    
     while True:
         choice = input("Enter choice (1-2): ").strip()
         if choice == "1":
@@ -400,11 +411,15 @@ def handle_character_death():
                 character_manager.revive_character(current_character)
                 print(f"{current_character['name']} has been revived with 50% health.")
                 return
-            print("Not enough gold!")
+            else:
+                print("Not enough gold!")
         elif choice == "2":
             game_running = False
             print("Game over.")
             return
+        else:
+            print("Invalid choice. Enter 1 or 2.")
+
 
 def display_welcome():
     """Display welcome message"""
