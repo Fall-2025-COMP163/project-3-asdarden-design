@@ -137,7 +137,7 @@ def abandon_quest(character, quest_id):
     Raises: QuestNotActiveError if quest not active
     """
     # TODO: Implement quest abandonment
-   if quest_id not in character['active_quests']:
+    if quest_id not in character['active_quests']:
         raise QuestNotActiveError(f"Quest '{quest_id}' not active.")
 
     character['active_quests'].remove(quest_id)
@@ -224,7 +224,7 @@ def can_accept_quest(character, quest_id, quest_data_dict):
     """
     # TODO: Implement requirement checking
     # Check all requirements without raising exceptions
-   if quest_id not in quest_data_dict:
+    if quest_id not in quest_data_dict:
         return False
 
     quest = quest_data_dict[quest_id]
