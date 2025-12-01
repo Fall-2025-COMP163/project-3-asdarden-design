@@ -44,33 +44,25 @@ def load_quests(filename="data/quests.txt"):
     
     if not os.path.exists(filename):
         raise MissingDataFileError("Quest file not found")
-
     try:
-        f = open(filename, "r")
-        content = f.read()
-        f.close()
+        with open(filename, "r") as f:
+            content = f.read()
     except:
         raise CorruptedDataError("Cannot read quest file")
 
     quests = {}
-
     try:
         blocks = content.strip().split("\n\n")
-
         for block in blocks:
-            lines = [ln for ln in block.split("\n") if ln.strip() != ""]
+            lines = [ln for ln in block.split("\n") if ln.strip()]
             if not lines:
                 continue
-
             quest = parse_quest_block(lines)
             validate_quest_data(quest)
-
-            quest_id = quest["quest_id"]
-            quests[quest_id] = quest
-
+            quests[quest["quest_id"]] = quest
     except InvalidDataFormatError:
         raise
-    except:
+    except Exception:
         raise InvalidDataFormatError("Quest file format invalid")
 
     return quests
@@ -92,39 +84,31 @@ def load_items(filename="data/items.txt"):
     """
     # TODO: Implement this function
     # Must handle same exceptions as load_quests
-
     if not os.path.exists(filename):
         raise MissingDataFileError("Item file not found")
-
     try:
-        f = open(filename, "r")
-        content = f.read()
-        f.close()
+        with open(filename, "r") as f:
+            content = f.read()
     except:
         raise CorruptedDataError("Cannot read item file")
 
     items = {}
-
     try:
         blocks = content.strip().split("\n\n")
-
         for block in blocks:
-            lines = [ln for ln in block.split("\n") if ln.strip() != ""]
+            lines = [ln for ln in block.split("\n") if ln.strip()]
             if not lines:
                 continue
-
             item = parse_item_block(lines)
             validate_item_data(item)
-
-            item_id = item["item_id"]
-            items[item_id] = item
-
+            items[item["item_id"]] = item
     except InvalidDataFormatError:
         raise
-    except:
+    except Exception:
         raise InvalidDataFormatError("Item file format invalid")
 
     return items
+
 
 def validate_quest_data(quest_dict):
     """
@@ -146,16 +130,12 @@ def validate_quest_data(quest_dict):
         if key not in quest_dict:
             raise InvalidDataFormatError(f"Quest missing field: {key}")
 
-    if not isinstance(quest_dict["reward_xp"], int):
-        raise InvalidDataFormatError("Quest reward_xp must be integer")
-
-    if not isinstance(quest_dict["reward_gold"], int):
-        raise InvalidDataFormatError("Quest reward_gold must be integer")
-
-    if not isinstance(quest_dict["required_level"], int):
-        raise InvalidDataFormatError("Quest required_level must be integer")
+    for num_key in ["reward_xp", "reward_gold", "required_level"]:
+        if not isinstance(quest_dict[num_key], int):
+            raise InvalidDataFormatError(f"Quest {num_key} must be an integer")
 
     return True
+
 
 def validate_item_data(item_dict):
     """
@@ -169,6 +149,7 @@ def validate_item_data(item_dict):
     """
     # TODO: Implement validation
     
+:
     required = ["item_id", "name", "type", "effect", "cost", "description"]
     for key in required:
         if key not in item_dict:
@@ -240,7 +221,6 @@ def parse_quest_block(lines):
     # Handle parsing errors gracefully
     
     quest = {}
-
     try:
         for line in lines:
             if ":" not in line:
@@ -248,16 +228,36 @@ def parse_quest_block(lines):
             key, value = line.split(":", 1)
             key = key.strip().lower()
             value = value.strip()
+            
+            # Convert numeric fields to int
             if key in ["reward_xp", "reward_gold", "required_level"]:
-                value = int(value)
-            quest[key] = value
+                try:
+                    value = int(value)
+                except ValueError:
+                    raise InvalidDataFormatError(f"Invalid numeric value for {key}")
+            
+            # Map lowercased keys to standard dict keys
+            key_map = {
+                "quest_id": "quest_id",
+                "title": "title",
+                "description": "description",
+                "reward_xp": "reward_xp",
+                "reward_gold": "reward_gold",
+                "required_level": "required_level",
+                "prerequisite": "prerequisite"
+            }
+            if key in key_map:
+                quest[key_map[key]] = value
+
         if "quest_id" not in quest:
             raise InvalidDataFormatError("Quest missing QUEST_ID")
-
-    except:
+    except InvalidDataFormatError:
+        raise
+    except Exception:
         raise InvalidDataFormatError("Failed to parse quest")
 
     return quest
+
 
 def parse_item_block(lines):
     """
@@ -272,28 +272,42 @@ def parse_item_block(lines):
     # TODO: Implement parsing logic
 
     item = {}
-
     try:
         for line in lines:
             if ":" not in line:
                 raise InvalidDataFormatError("Malformed item line")
-
             key, value = line.split(":", 1)
             key = key.strip().lower()
             value = value.strip()
 
             if key == "cost":
-                value = int(value)
+                try:
+                    value = int(value)
+                except ValueError:
+                    raise InvalidDataFormatError("Item cost must be an integer")
 
-            item[key] = value
+            # Map lowercased keys to standard dict keys
+            key_map = {
+                "item_id": "item_id",
+                "name": "name",
+                "type": "type",
+                "effect": "effect",
+                "cost": "cost",
+                "description": "description"
+            }
+            if key in key_map:
+                item[key_map[key]] = value
 
         if "item_id" not in item:
             raise InvalidDataFormatError("Item missing ITEM_ID")
-
-    except:
+    except InvalidDataFormatError:
+        raise
+    except Exception:
         raise InvalidDataFormatError("Failed to parse item")
 
     return item
+
+
 
 # ============================================================================
 # TESTING
