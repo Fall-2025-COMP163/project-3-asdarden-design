@@ -104,26 +104,37 @@ def complete_quest(character, quest_id, quest_data_dict):
     # Grant rewards (use character_manager.gain_experience and add_gold)
     # Return reward summary
     # 1 — Quest must exist
-# 2 — Quest must be active
-if quest_id not in character['active_quests']:
-    raise QuestNotActiveError(f"Quest '{quest_id}' is not active.")
+    if quest_id not in quest_data_dict:
+        raise QuestNotFoundError(f"Quest '{quest_id}' not found.")
 
-# 3 — Cannot complete if already completed
-if quest_id in character['completed_quests']:
-    raise QuestAlreadyCompletedError(f"Quest '{quest_id}' already completed.")
+    quest = quest_data_dict[quest_id]
 
-# 6 — Remove from active quests
-character['active_quests'].remove(quest_id)
+    # 2 — Quest must be active
+    if quest_id not in character['active_quests']:
+        raise QuestNotActiveError(f"Quest '{quest_id}' is not active.")
 
-# 7 — Add to completed quests
-character['completed_quests'].append(quest_id)
+    # 3 — Cannot complete if already completed
+    if quest_id in character['completed_quests']:
+        raise QuestAlreadyCompletedError(f"Quest '{quest_id}' already completed.")
 
-# 8 — Grant rewards
-reward_xp = quest['reward_xp']
-reward_gold = quest['reward_gold']
+    # 4 — Remove from active quests
+    character['active_quests'].remove(quest_id)
 
-character_manager.gain_experience(character, reward_xp)
-character_manager.add_gold(character, reward_gold)
+    # 5 — Add to completed quests
+    character['completed_quests'].append(quest_id)
+
+    # 6 — Grant rewards
+    reward_xp = quest['reward_xp']
+    reward_gold = quest['reward_gold']
+
+    character_manager.gain_experience(character, reward_xp)
+    character_manager.add_gold(character, reward_gold)
+
+    return {
+        "xp_gained": reward_xp,
+        "gold_gained": reward_gold,
+        "quest_completed": quest_id
+    }
 
 
 def abandon_quest(character, quest_id):
