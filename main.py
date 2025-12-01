@@ -370,7 +370,7 @@ def load_game_data():
     # Handle MissingDataFileError, InvalidDataFormatError
     # If files missing, create defaults with game_data.create_default_data_files()
 
-   try:
+    try:
         all_quests = game_data.load_quests()
         all_items = game_data.load_items()
     except (MissingDataFileError, InvalidDataFormatError):
