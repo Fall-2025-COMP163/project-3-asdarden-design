@@ -68,7 +68,7 @@ def load_quests(filename="data/quests.txt"):
             quest_id = quest["quest_id"]
             quests[quest_id] = quest
 
-  except InvalidDataFormatError:
+    except InvalidDataFormatError:
         raise
     except:
         raise InvalidDataFormatError("Quest file format invalid")
