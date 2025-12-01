@@ -62,7 +62,7 @@ def create_character(name, character_class):
 
     return {
         "name": name,
-        "class": character_class.lower(),
+        "class": character_class,
         "level": 1,
         "health": stats["health"],
         "max_health": stats["health"],
