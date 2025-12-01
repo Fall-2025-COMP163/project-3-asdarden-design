@@ -441,25 +441,17 @@ if __name__ == "__main__":
     
     # Test saving
     try:
-        saved = save_character(char)
-        if saved:
-            print("Character saved successfully")
+        save_character(char)
+        print("Character saved successfully")
     except Exception as e:
         print(f"Save error: {e}")
     
     # Test loading
     try:
-        filename = "TestHero_save.txt"
-        # Simply try opening the file; if it fails, raise CharacterNotFoundError
-        try:
-            with open(filename, "r") as f:
-                pass
-        except FileNotFoundError:
-            raise CharacterNotFoundError(f"No save file for {char['name']}")
-        
         loaded = load_character("TestHero")
         print(f"Loaded: {loaded['name']}")
     except CharacterNotFoundError:
         print("Character not found")
     except SaveFileCorruptedError:
         print("Save file corrupted")
+    Test character creation
