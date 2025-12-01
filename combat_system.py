@@ -87,15 +87,12 @@ class SimpleBattle:
         self.enemy = enemy
         self.combat_active = True
         self.turn_counter = 1
-        self.character['in_battle'] = True
 
         # Ensure ability cooldown tracking exists
         ensure_abilities_initialized(self.character)
-        # mark character as in_battle to help other logic if needed
+        # Mark character as in_battle to help other logic
         self.character['in_battle'] = True
 
-        # Ensure abilities structure exists so cooldown helpers won't fail
-        ensure_abilities_initialized(self.character)
     
     def start_battle(self):
         """
@@ -283,10 +280,11 @@ class SimpleBattle:
         # TODO: Implement escape attempt
         # Use random number or simple calculation
         # If successful, set combat_active to False
-        success = random.randint(0, 1) == 1
+        success = random.choice([True, False])
         if success:
             self.combat_active = False
         return success
+
 
 
 # ============================================================================
@@ -360,9 +358,7 @@ def warrior_power_strike(character, enemy):
     """Warrior special ability"""
     # TODO: Implement power strike
     # Double strength damage
-    damage = int(character.get('strength', 1)) * 2 - (enemy.get('strength', 0) // 4)
-    if damage < 1:
-        damage = 1
+    damage = max(1, int(character.get('strength', 1)) * 2 - (enemy.get('strength', 0) // 4))
     enemy['health'] = max(0, enemy.get('health', 0) - damage)
     return f"{character.get('name','Player')} used Power Strike! {damage} damage dealt."
 
@@ -370,11 +366,10 @@ def mage_fireball(character, enemy):
     """Mage special ability"""
     # TODO: Implement fireball
     # Double magic damage
-    damage = int(character.get('magic', 1)) * 2 - (enemy.get('magic', 0) // 4)
-    if damage < 1:
-        damage = 1
+    damage = max(1, int(character.get('magic', 1)) * 2 - (enemy.get('magic', 0) // 4))
     enemy['health'] = max(0, enemy.get('health', 0) - damage)
     return f"{character.get('name','Player')} cast Fireball! {damage} damage dealt."
+
 
 
 def rogue_critical_strike(character, enemy):
@@ -383,13 +378,12 @@ def rogue_critical_strike(character, enemy):
     # 50% chance for triple damage
     crit = random.randint(0, 1) == 1
     if crit:
-        damage = int(character.get('strength', 1)) * 3 - (enemy.get('strength', 0) // 4)
+        damage = max(1, int(character.get('strength', 1)) * 3 - (enemy.get('strength', 0) // 4))
     else:
-        damage = int(character.get('strength', 1)) - (enemy.get('strength', 0) // 4)
-    if damage < 1:
-        damage = 1
+        damage = max(1, int(character.get('strength', 1)) - (enemy.get('strength', 0) // 4))
     enemy['health'] = max(0, enemy.get('health', 0) - damage)
     return f"{character.get('name','Player')} used Critical Strike! {damage} damage dealt."
+
 
 
 def cleric_heal(character):
@@ -397,8 +391,9 @@ def cleric_heal(character):
     # TODO: Implement healing
     # Restore 30 HP (not exceeding max_health)
     heal_amount = 30
-    character['health'] = min(character.get('max_health', heal_amount), character.get('health', 0) + heal_amount)
+    character['health'] = min(character.get('health', 0) + heal_amount, character.get('max_health', 0))
     return f"{character.get('name','Player')} healed for {heal_amount} HP."
+
 
 
 # ============================================================================
