@@ -160,19 +160,32 @@ def use_item(character, item_id, item_data):
     # Apply effect to character
     # Remove item from inventory
 
-    effect = item_data.get("effect", "")
-    stat, value = effect.split(":")
-    value = int(value)
+    # Verify item exists
+    if not has_item(character, item_id):
+        raise ItemNotFoundError("Item not found in inventory.")
 
-    if stat == "health":
-        # Heal character, do not exceed max health
-        healed_amount = min(value, character["max_health"] - character["health"])
-        character["health"] += healed_amount
-        print(f"Used {item_id}. Healed {healed_amount} health points.")
-        return healed_amount
+    # Verify consumable type
+    if item_data.get('type') != 'consumable':
+        raise InvalidItemTypeError("Item is not a consumable.")
+
+    # Parse effect safely
+    stat, value = parse_item_effect(item_data.get('effect', ''))
+    if not stat:
+        # No effect to apply
+        remove_item_from_inventory(character, item_id)
+        return f"Used {item_id}. No effect."
+
+    # Apply effect (use helper to handle bounds like max_health)
+    apply_stat_effect(character, stat, value)
+
+    # Remove one instance of the item
+    remove_item_from_inventory(character, item_id)
+
+    # Return a descriptive string
+    if stat == 'health':
+        return f"Used {item_id}. Healed {value} health points (capped at max)."
     else:
-        print(f"Effect not implemented for {stat}")
-        return 0
+        return f"Used {item_id}. {stat} changed by {value}."
 
 def equip_weapon(character, item_id, item_data):
     """
@@ -201,13 +214,43 @@ def equip_weapon(character, item_id, item_data):
     # Store equipped_weapon in character dictionary
     # Remove item from inventory
 
-    if item_data["type"] != "weapon":
-        raise InvalidItemTypeError("Only weapons can be equipped!")
+    if not has_item(character, item_id):
+        raise ItemNotFoundError("Weapon not found in inventory.")
+    if item_data.get('type') != 'weapon':
+        raise InvalidItemTypeError("Item is not a weapon.")
 
-    bonus = int(item_data["effect"].split(":")[1])  # Get bonus value
-    character["equipped_weapon"] = item_id
-    character["strength"] += bonus
-    print(f"{item_id} equipped. Strength increased by {bonus}.")
+    # Ensure equipment keys exist
+    if 'equipped_weapon' not in character:
+        character['equipped_weapon'] = None
+        character['equipped_weapon_effect'] = None
+
+    # Unequip current weapon if any
+    if character.get('equipped_weapon'):
+        old_weapon = character['equipped_weapon']
+        old_effect = character.get('equipped_weapon_effect', '')
+        if old_effect:
+            stat_old, val_old = parse_item_effect(old_effect)
+            apply_stat_effect(character, stat_old, -val_old)
+
+        # Return old weapon to inventory (check space)
+        if 'inventory' not in character:
+            character['inventory'] = []
+        if len(character['inventory']) >= MAX_INVENTORY_SIZE:
+            raise InventoryFullError("Inventory full, cannot unequip weapon.")
+        character['inventory'].append(old_weapon)
+
+    # Apply new weapon effect
+    effect = item_data.get('effect', '')
+    stat_new, val_new = parse_item_effect(effect)
+    if stat_new:
+        apply_stat_effect(character, stat_new, val_new)
+
+    # Set equipped info and remove the item from inventory
+    character['equipped_weapon'] = item_id
+    character['equipped_weapon_effect'] = effect
+    remove_item_from_inventory(character, item_id)
+
+    return f"Equipped weapon: {item_id}."
 
 def equip_armor(character, item_id, item_data):
     """
