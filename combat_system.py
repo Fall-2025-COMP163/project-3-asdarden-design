@@ -87,6 +87,9 @@ class SimpleBattle:
         self.enemy = enemy
         self.combat_active = True
         self.turn_counter = 1
+        # initialize cooldowns if missing
+        if '_ability_cooldowns' not in self.character:
+            self.character['_ability_cooldowns'] = {k: 0 for k in DEFAULT_COOLDOWNS}
     
     def start_battle(self):
         """
@@ -144,6 +147,8 @@ class SimpleBattle:
         self.apply_damage(self.enemy, damage)
         display_battle_log(f"{self.character['name']} attacks for {damage} damage!")
         
+        decrement_ability_cooldowns(self.character)
+
         if self.check_battle_end() is not None:
             self.combat_active = False
 
@@ -166,7 +171,9 @@ class SimpleBattle:
         damage = self.calculate_damage(self.enemy, self.character)
         self.apply_damage(self.character, damage)
         display_battle_log(f"{self.enemy['name']} attacks for {damage} damage!")
-        
+
+        decrement_ability_cooldowns(self.character)
+
         if self.check_battle_end() is not None:
             self.combat_active = False
     
@@ -226,9 +233,17 @@ class SimpleBattle:
             self.combat_active = False
         return success
 
+import time
 # ============================================================================
 # SPECIAL ABILITIES
 # ============================================================================
+
+DEFAULT_COOLDOWNS = {
+    'warrior': 2,
+    'mage': 3,
+    'rogue': 2,
+    'cleric': 4
+}
 
 def use_special_ability(character, enemy):
     """
@@ -248,16 +263,29 @@ def use_special_ability(character, enemy):
     # Execute appropriate ability
     # Track cooldowns (optional advanced feature)
     cls = character.get('class', '').lower()
-    if cls == 'warrior':
-        return warrior_power_strike(character, enemy)
-    elif cls == 'mage':
-        return mage_fireball(character, enemy)
-    elif cls == 'rogue':
-        return rogue_critical_strike(character, enemy)
-    elif cls == 'cleric':
-        return cleric_heal(character)
-    else:
+    if cls not in ['warrior', 'mage', 'rogue', 'cleric']:
         return "No special ability available."
+    
+    # Initialize cooldown tracking if missing
+    if '_ability_cooldowns' not in character:
+        character['_ability_cooldowns'] = {k: 0 for k in DEFAULT_COOLDOWNS}
+    
+    if character['_ability_cooldowns'][cls] > 0:
+        raise AbilityOnCooldownError(f"{cls.title()} ability is on cooldown for {character['_ability_cooldowns'][cls]} more turn(s).")
+    
+    # Execute ability
+    if cls == 'warrior':
+        result = warrior_power_strike(character, enemy)
+    elif cls == 'mage':
+        result = mage_fireball(character, enemy)
+    elif cls == 'rogue':
+        result = rogue_critical_strike(character, enemy)
+    elif cls == 'cleric':
+        result = cleric_heal(character)
+    
+    # Set cooldown
+    character['_ability_cooldowns'][cls] = DEFAULT_COOLDOWNS[cls]
+    return result
 
 def warrior_power_strike(character, enemy):
     """Warrior special ability"""
