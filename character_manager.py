@@ -72,13 +72,8 @@ def create_character(name, character_class):
         "gold": 100,
         "inventory": [],
         "active_quests": [],
-        "completed_quests": [],
-        "equipped_weapon": None,
-        "equipped_weapon_effect": None,
-        "equipped_armor": None,
-        "equipped_armor_effect": None
+        "completed_quests": []
     }
-
 import os
 def save_character(character, save_directory="data/save_games"):
     """
@@ -108,8 +103,7 @@ def save_character(character, save_directory="data/save_games"):
     # Handle any file I/O errors appropriately
     # Lists should be saved as comma-separated values
     
-
-        if not os.path.exists(save_directory):
+    if not os.path.exists(save_directory):
         os.makedirs(save_directory)
 
     filename = f"{character['name']}_save.txt"
@@ -127,9 +121,9 @@ def save_character(character, save_directory="data/save_games"):
             f.write(f"EXPERIENCE: {character['experience']}\n")
             f.write(f"GOLD: {character['gold']}\n")
 
-            inv = ",".join(character.get("inventory", []))
-            active = ",".join(character.get("active_quests", []))
-            completed = ",".join(character.get("completed_quests", []))
+            inv = ",".join(character["inventory"])
+            active = ",".join(character["active_quests"])
+            completed = ",".join(character["completed_quests"])
 
             f.write(f"INVENTORY: {inv}\n")
             f.write(f"ACTIVE_QUESTS: {active}\n")
@@ -161,6 +155,11 @@ def load_character(character_name, save_directory="data/save_games"):
     # Parse comma-separated lists back into Python lists
 
     filename = f"{character_name}_save.txt"
+    path = save_directory + "/" + filename
+
+    # Check manually if file exists
+
+    filename = f"{character_name}_save.txt"
     path = os.path.join(save_directory, filename)
 
     if not os.path.exists(path):
@@ -184,7 +183,9 @@ def load_character(character_name, save_directory="data/save_games"):
             if ":" not in line:
                 raise InvalidSaveDataError("Invalid line formatting.")
             key, value = line.strip().split(":", 1)
-            data[key.strip()] = value.strip()
+            key = key.strip()
+            value = value.strip()
+            data[key] = value
 
         for key in expected_keys:
             if key not in data:
@@ -202,15 +203,8 @@ def load_character(character_name, save_directory="data/save_games"):
             "gold": int(data["GOLD"]),
             "inventory": [] if data["INVENTORY"] == "" else data["INVENTORY"].split(","),
             "active_quests": [] if data["ACTIVE_QUESTS"] == "" else data["ACTIVE_QUESTS"].split(","),
-            "completed_quests": [] if data["COMPLETED_QUESTS"] == "" else data["COMPLETED_QUESTS"].split(","),
-            "equipped_weapon": None,
-            "equipped_weapon_effect": None,
-            "equipped_armor": None,
-            "equipped_armor_effect": None
+            "completed_quests": [] if data["COMPLETED_QUESTS"] == "" else data["COMPLETED_QUESTS"].split(",")
         }
-
-        # Validate loaded character
-        validate_character_data(character)
 
         return character
 
@@ -218,8 +212,6 @@ def load_character(character_name, save_directory="data/save_games"):
         raise InvalidSaveDataError("Invalid numerical field.")
     except InvalidSaveDataError:
         raise
-
-
 
 def list_saved_characters(save_directory="data/save_games"):
     """
@@ -230,16 +222,17 @@ def list_saved_characters(save_directory="data/save_games"):
     # TODO: Implement this function
     # Return empty list if directory doesn't exist
     # Extract character names from filenames
-
-    if not os.path.exists(save_directory):
-        return []
+    
+    filename = save_directory + "/" + character_name + "_save.txt"
     names = []
-    for f in os.listdir(save_directory):
-        if "_save.txt" in f and f[-9:] == "_save.txt":  # check last 9 chars
-            names.append(f.replace("_save.txt", ""))
+    try:
+        files = os.listdir(save_directory)
+        for f in files:
+            if "_save.txt" in f:
+                names.append(f.replace("_save.txt",""))
+    except:
+        return []
     return names
-
-
 
 def delete_character(character_name, save_directory="data/save_games"):
     """
