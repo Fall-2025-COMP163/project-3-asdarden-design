@@ -74,7 +74,7 @@ def create_character(name, character_class):
         "active_quests": [],
         "completed_quests": []
     }
-
+import os
 def save_character(character, save_directory="data/save_games"):
     """
     Save character to file
@@ -104,7 +104,7 @@ def save_character(character, save_directory="data/save_games"):
     # Lists should be saved as comma-separated values
     
     if not os.path.exists(save_directory):
-        raise FileNotFoundError(f"Save directory '{save_directory}' does not exist.")
+        os.makedirs(save_directory)
 
     filename = f"{character['name']}_save.txt"
     path = os.path.join(save_directory, filename)
