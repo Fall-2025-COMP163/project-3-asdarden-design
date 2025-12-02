@@ -41,27 +41,46 @@ def load_quests(filename="data/quests.txt"):
     # - FileNotFoundError → raise MissingDataFileError
     # - Invalid format → raise InvalidDataFormatError
     # - Corrupted/unreadable data → raise CorruptedDataError
-    if not os.path.exists(filename):
-        raise MissingDataFileError(f"Quest file '{filename}' not found.")
-    try:
-        with open(filename, "r", encoding="utf-8") as f:
-            content = f.read()
-    except Exception:
-        raise CorruptedDataError(f"Cannot read quest file '{filename}'.")
 
     quests = {}
-    try:
-        blocks = [b for b in content.strip().split("\n\n") if b.strip()]
-        for block in blocks:
-            lines = [line.strip() for line in block.split("\n") if line.strip()]
-            quest = parse_quest_block(lines)
-            validate_quest_data(quest)
-            quests[quest["QUEST_ID"]] = quest
-    except InvalidDataFormatError:
-        raise
-    except Exception:
-        raise InvalidDataFormatError(f"Quest file '{filename}' format invalid.")
+    current = {}
+
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Detect section header WITHOUT startswith/endswith/re
+            if len(line) > 2 and line[0] == "[" and line[-1] == "]":
+                # Save previous quest
+                if current:
+                    qid = current.get("quest_id")
+                    if qid:
+                        quests[qid] = current
+                current = {}
+                continue
+
+            # Parse key-value line
+            if ":" in line:
+                key, value = line.split(":", 1)
+                key = key.strip().lower()
+                value = value.strip()
+
+                # convert to int if digits
+                if value.isdigit():
+                    value = int(value)
+
+                current[key] = value
+
+    # Save last quest block
+    if current:
+        qid = current.get("quest_id")
+        if qid:
+            quests[qid] = current
+
     return quests
+
     
 def load_items(filename="data/items.txt"):
     """
@@ -117,8 +136,10 @@ def validate_quest_data(quest_dict):
     # Check that all required keys exist
     # Check that numeric values are actually numbers
     
-    required = ["QUEST_ID", "TITLE", "DESCRIPTION", "REWARD_XP",
-                "REWARD_GOLD", "REQUIRED_LEVEL", "PREREQUISITE"]
+    required = ["quest_id", "title", "description",
+            "reward_xp", "reward_gold",
+            "required_level", "prerequisite"]
+
     for key in required:
         if key not in quest_dict:
             raise InvalidDataFormatError(f"Quest missing field '{key}'")
