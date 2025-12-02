@@ -53,7 +53,8 @@ def accept_quest(character, quest_id, quest_data_dict):
 
 
     if quest_id in character['active_quests']:
-        raise QuestAlreadyCompletedError(f"Quest '{quest_id}' is already active.")
+        raise QuestRequirementsNotMetError(f"Quest '{quest_id}' is already active.")
+
 
 
     quest = quest_data_dict[quest_id]
@@ -298,9 +299,15 @@ def get_quest_completion_percentage(character, quest_data_dict):
     # total_quests = len(quest_data_dict)
     # completed_quests = len(character['completed_quests'])
     # percentage = (completed / total) * 100
+
+    total = len(quest_data_dict)
+    completed = len(character['completed_quests'])
+    
     if total == 0:
         return 0.0
-    return (float(completed) / float(total)) * 100
+        
+    return (completed / total) * 100
+
 
 
 def get_total_quest_rewards_earned(character, quest_data_dict):
