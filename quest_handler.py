@@ -52,9 +52,11 @@ def accept_quest(character, quest_id, quest_data_dict):
     # Add to character['active_quests']
 
 
+    if quest_id not in quest_data_dict:
+        raise QuestNotFoundError(f"Quest '{quest_id}' not found.")
+
     if quest_id in character['active_quests']:
         raise QuestRequirementsNotMetError(f"Quest '{quest_id}' is already active.")
-
 
 
     quest = quest_data_dict[quest_id]
