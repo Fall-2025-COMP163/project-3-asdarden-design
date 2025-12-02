@@ -4,7 +4,7 @@ Character Manager Module - Starter Code
 
 Name: Anzino Darden
 
-AI Usage: ChatGPT assisted in implementing all sections in the file
+AI Usage: ChatGPT assisted by fully implementing all functions, exception handling, data validation, integration, and workflow logic in this file.
 
 This module handles character creation, loading, and saving.
 """
