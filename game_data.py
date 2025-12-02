@@ -51,33 +51,35 @@ def load_quests(filename="data/quests.txt"):
             if not line:
                 continue
 
-            if line.startswith("[") and line.endswith("]"):
-                # Start of new quest block
+            # Detect section header WITHOUT startswith/endswith/re
+            if len(line) > 2 and line[0] == "[" and line[-1] == "]":
+                # Save previous quest
                 if current:
                     qid = current.get("quest_id")
                     if qid:
                         quests[qid] = current
                 current = {}
-            else:
-                if ":" in line:
-                    key, value = line.split(":", 1)
-                    key = key.strip().lower()   # 🔥 convert keys to lowercase
-                    value = value.strip()
+                continue
 
-                    # Convert numbers to int
-                    if value.isdigit():
-                        value = int(value)
+            # Parse key-value line
+            if ":" in line:
+                key, value = line.split(":", 1)
+                key = key.strip().lower()
+                value = value.strip()
 
-                    current[key] = value
+                # convert to int if digits
+                if value.isdigit():
+                    value = int(value)
 
-    # Add final quest
+                current[key] = value
+
+    # Save last quest block
     if current:
         qid = current.get("quest_id")
         if qid:
             quests[qid] = current
 
     return quests
-
 
     
 def load_items(filename="data/items.txt"):
