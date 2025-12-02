@@ -4,7 +4,7 @@ Combat System Module - Starter Code
 
 Name: Anzino Darden
 
-AI Usage: Chatgpt implemented all functions in this file.
+AI Usage: ChatGPT assisted by fully implementing all functions, exception handling, data validation, integration, and workflow logic in this file.
 
 Handles combat mechanics
 """
