@@ -47,56 +47,43 @@ def load_quests(filename="data/quests.txt"):
 
     try:
         with open(filename, "r") as f:
-            lines = f.readlines()
-    except FileNotFoundError:
-        raise MissingDataFileError(f"Data file '{filename}' not found.")
+            lines = [line.strip() for line in f]
 
-    try:
-        for line in lines + ["\n"]:
-            line = line.strip()
-            if not line: 
+        for line in lines + [""]:  # Add empty line to flush last quest
+            if line == "":
                 if current:
-                    normalized = {}
-                    required_fields = {
-                        "QUEST_ID": "quest_id",
-                        "TITLE": "title",
-                        "DESCRIPTION": "description",
-                        "REWARD_XP": "reward_xp",
-                        "REWARD_GOLD": "reward_gold",
-                        "REQUIRED_LEVEL": "required_level",
-                        "PREREQUISITE": "prerequisite"
-                    }
+                    # Normalize keys to lowercase
+                    quest = {k.lower(): v for k, v in current.items()}
 
-                    for k, lower_k in required_fields.items():
-                        if k not in current:
-                            raise InvalidDataFormatError(f"Quest missing field '{k}'")
-                        normalized[lower_k] = current[k]
-                        # Convert numeric fields
-                        if lower_k in ["reward_xp", "reward_gold", "required_level"]:
-                            try:
-                                normalized[lower_k] = int(normalized[lower_k])
-                            except ValueError:
-                                raise InvalidDataFormatError(
-                                    f"Quest field '{k}' must be an integer."
-                                )
+                    # Validate required fields
+                    required = ["quest_id", "title", "description", "reward_xp",
+                                "reward_gold", "required_level", "prerequisite"]
+                    for key in required:
+                        if key not in quest:
+                            raise InvalidDataFormatError(f"Quest missing field '{key}'")
 
-                    quest_id = normalized['quest_id']
-                    quests[quest_id] = normalized
+                    # Convert numeric fields
+                    try:
+                        quest['reward_xp'] = int(quest['reward_xp'])
+                        quest['reward_gold'] = int(quest['reward_gold'])
+                        quest['required_level'] = int(quest['required_level'])
+                    except ValueError:
+                        raise InvalidDataFormatError(f"Quest has invalid number field: {quest}")
+
+                    quests[quest['quest_id']] = quest
                     current = {}
                 continue
-
-            # Parse line like KEY: value
-            if ':' not in line:
-                raise InvalidDataFormatError(f"Invalid line format: {line}")
+            if ":" not in line:
+                raise InvalidDataFormatError(f"Invalid quest line: {line}")
             key, value = line.split(":", 1)
-            key = key.strip().upper()
-            value = value.strip()
-            current[key] = value
+            current[key.strip()] = value.strip()
 
+    except FileNotFoundError:
+        raise MissingDataFileError(f"Quest file '{filename}' not found.")
+    except InvalidDataFormatError:
+        raise
     except Exception as e:
-        if isinstance(e, InvalidDataFormatError):
-            raise e
-        raise CorruptedDataError(f"Error reading quest data: {e}")
+        raise CorruptedDataError(f"Could not read quest data: {e}")
 
     return quests
 
@@ -123,35 +110,40 @@ def load_items(filename="data/items.txt"):
 
     try:
         with open(filename, "r") as f:
-            lines = f.readlines()
+            lines = [line.strip() for line in f]
+
+        for line in lines + [""]:
+            if line == "":
+                if current:
+                    # Normalize keys to lowercase
+                    item = {k.lower(): v for k, v in current.items()}
+
+                    # Validate required fields
+                    required = ["item_id", "name", "type", "effect", "cost", "description"]
+                    for key in required:
+                        if key not in item:
+                            raise InvalidDataFormatError(f"Item missing field '{key}'")
+
+                    # Convert numeric fields
+                    try:
+                        item['cost'] = int(item['cost'])
+                    except ValueError:
+                        raise InvalidDataFormatError(f"Item has invalid number field: {item}")
+
+                    items[item['item_id']] = item
+                    current = {}
+                continue
+            if ":" not in line:
+                raise InvalidDataFormatError(f"Invalid item line: {line}")
+            key, value = line.split(":", 1)
+            current[key.strip()] = value.strip()
+
     except FileNotFoundError:
-        raise MissingDataFileError(f"Data file '{filename}' not found.")
-
-    for line in lines + ["\n"]:
-        line = line.strip()
-        if not line:
-            if current:
-                # Normalize keys
-                normalized = {
-                    "item_id": current.get("ITEM_ID"),
-                    "name": current.get("NAME"),
-                    "type": current.get("TYPE"),
-                    "effect": current.get("EFFECT"),
-                    "cost": int(current.get("COST", 0)),
-                    "description": current.get("DESCRIPTION"),
-                }
-
-                if None in normalized.values():
-                    raise InvalidDataFormatError(f"Item missing required field(s): {normalized}")
-
-                items[normalized["item_id"]] = normalized
-                current = {}
-            continue
-
-        if ":" not in line:
-            raise InvalidDataFormatError(f"Invalid line: {line}")
-        key, value = line.split(":", 1)
-        current[key.strip().upper()] = value.strip()
+        raise MissingDataFileError(f"Item file '{filename}' not found.")
+    except InvalidDataFormatError:
+        raise
+    except Exception as e:
+        raise CorruptedDataError(f"Could not read item data: {e}")
 
     return items
 
@@ -171,14 +163,13 @@ def validate_quest_data(quest_dict):
     # Check that numeric values are actually numbers
     
     required = ["quest_id", "title", "description",
-            "reward_xp", "reward_gold",
-            "required_level", "prerequisite"]
+                "reward_xp", "reward_gold",
+                "required_level", "prerequisite"]
 
     for key in required:
         if key not in quest_dict:
             raise InvalidDataFormatError(f"Quest missing field '{key}'")
 
-    # Check numeric fields
     for key in ["reward_xp", "reward_gold", "required_level"]:
         if not isinstance(quest_dict[key], int):
             raise InvalidDataFormatError(f"Quest field '{key}' must be an integer")
@@ -199,15 +190,17 @@ def validate_item_data(item_dict):
     # TODO: Implement validation
     
     required = ["item_id", "name", "type", "effect", "cost", "description"]
+
     for key in required:
         if key not in item_dict:
             raise InvalidDataFormatError(f"Item missing field '{key}'")
 
-    if item_dict["type"] not in ["weapon", "armor", "consumable"]:
-        raise InvalidDataFormatError(f"Item has invalid type '{item_dict['type']}'")
-    
-    if not isinstance(item_dict["cost"], int):
-        raise InvalidDataFormatError(f"Item 'cost' must be an integer")
+    if not isinstance(item_dict['cost'], int):
+        raise InvalidDataFormatError("Item field 'cost' must be an integer")
+
+    valid_types = ["weapon", "armor", "consumable"]
+    if item_dict['type'] not in valid_types:
+        raise InvalidDataFormatError(f"Invalid item type: {item_dict['type']}")
 
     return True
 
