@@ -45,39 +45,58 @@ def load_quests(filename="data/quests.txt"):
     quests = {}
     current = {}
 
-    with open(filename, "r") as f:
-        for line in f:
+    try:
+        with open(filename, "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        raise MissingDataFileError(f"Data file '{filename}' not found.")
+
+    try:
+        for line in lines + ["\n"]:
             line = line.strip()
-            if not line:
-                continue
-
-            # Detect section header WITHOUT startswith/endswith/re
-            if len(line) > 2 and line[0] == "[" and line[-1] == "]":
-                # Save previous quest
+            if not line: 
                 if current:
-                    qid = current.get("quest_id")
-                    if qid:
-                        quests[qid] = current
-                current = {}
+                    normalized = {}
+                    required_fields = {
+                        "QUEST_ID": "quest_id",
+                        "TITLE": "title",
+                        "DESCRIPTION": "description",
+                        "REWARD_XP": "reward_xp",
+                        "REWARD_GOLD": "reward_gold",
+                        "REQUIRED_LEVEL": "required_level",
+                        "PREREQUISITE": "prerequisite"
+                    }
+
+                    for k, lower_k in required_fields.items():
+                        if k not in current:
+                            raise InvalidDataFormatError(f"Quest missing field '{k}'")
+                        normalized[lower_k] = current[k]
+                        # Convert numeric fields
+                        if lower_k in ["reward_xp", "reward_gold", "required_level"]:
+                            try:
+                                normalized[lower_k] = int(normalized[lower_k])
+                            except ValueError:
+                                raise InvalidDataFormatError(
+                                    f"Quest field '{k}' must be an integer."
+                                )
+
+                    quest_id = normalized['quest_id']
+                    quests[quest_id] = normalized
+                    current = {}
                 continue
 
-            # Parse key-value line
-            if ":" in line:
-                key, value = line.split(":", 1)
-                key = key.strip().lower()
-                value = value.strip()
+            # Parse line like KEY: value
+            if ':' not in line:
+                raise InvalidDataFormatError(f"Invalid line format: {line}")
+            key, value = line.split(":", 1)
+            key = key.strip().upper()
+            value = value.strip()
+            current[key] = value
 
-                # convert to int if digits
-                if value.isdigit():
-                    value = int(value)
-
-                current[key] = value
-
-    # Save last quest block
-    if current:
-        qid = current.get("quest_id")
-        if qid:
-            quests[qid] = current
+    except Exception as e:
+        if isinstance(e, InvalidDataFormatError):
+            raise e
+        raise CorruptedDataError(f"Error reading quest data: {e}")
 
     return quests
 
@@ -143,9 +162,12 @@ def validate_quest_data(quest_dict):
     for key in required:
         if key not in quest_dict:
             raise InvalidDataFormatError(f"Quest missing field '{key}'")
-    for key in ["REWARD_XP", "REWARD_GOLD", "REQUIRED_LEVEL"]:
+
+    # Check numeric fields
+    for key in ["reward_xp", "reward_gold", "required_level"]:
         if not isinstance(quest_dict[key], int):
-            raise InvalidDataFormatError(f"Quest field '{key}' must be integer")
+            raise InvalidDataFormatError(f"Quest field '{key}' must be an integer")
+
     return True
 
 
