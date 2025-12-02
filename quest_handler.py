@@ -4,7 +4,7 @@ Quest Handler Module - Starter Code
 
 Name: Anzino Darden
 
-AI Usage: ChatGPT assisted with all function implementations.
+AI Usage: ChatGPT assisted by fully implementing all functions, exception handling, data validation, integration, and workflow logic in this module.
 
 This module handles quest management, dependencies, and completion.
 """
