@@ -51,30 +51,25 @@ def accept_quest(character, quest_id, quest_data_dict):
     # Check not already active
     # Add to character['active_quests']
 
-
     if quest_id not in quest_data_dict:
         raise QuestNotFoundError(f"Quest '{quest_id}' not found.")
 
-    if quest_id in character['active_quests']:
-        raise QuestRequirementsNotMetError(f"Quest '{quest_id}' is already active.")
-
-
     quest = quest_data_dict[quest_id]
 
-    # Level requirement
-    if character['level'] < quest['required_level']:
-        raise InsufficientLevelError(f"Level {quest['required_level']} required.")
+    # Convert keys to lowercase for internal consistency
+    qid = quest.get('QUEST_ID') or quest.get('quest_id')
+    prereq = quest.get('PREREQUISITE') or quest.get('prerequisite')
+    required_level = quest.get('REQUIRED_LEVEL') or quest.get('required_level')
 
-    # Prerequisite
-    prereq = quest['prerequisite']
+    if character['level'] < required_level:
+        raise InsufficientLevelError(f"Level {required_level} required.")
+
     if prereq != "NONE" and prereq not in character['completed_quests']:
         raise QuestRequirementsNotMetError(f"Prerequisite '{prereq}' not completed.")
 
-    # Already completed?
     if quest_id in character['completed_quests']:
         raise QuestAlreadyCompletedError(f"Quest '{quest_id}' already completed.")
 
-    # Already active?
     if quest_id in character['active_quests']:
         raise QuestAlreadyCompletedError(f"Quest '{quest_id}' already active.")
 
@@ -106,29 +101,22 @@ def complete_quest(character, quest_id, quest_data_dict):
     # Add to completed_quests
     # Grant rewards (use character_manager.gain_experience and add_gold)
     # Return reward summary
-    # 1 — Quest must exist
     if quest_id not in quest_data_dict:
         raise QuestNotFoundError(f"Quest '{quest_id}' not found.")
 
     quest = quest_data_dict[quest_id]
 
-    # 2 — Quest must be active
     if quest_id not in character['active_quests']:
         raise QuestNotActiveError(f"Quest '{quest_id}' is not active.")
 
-    # 3 — Cannot complete if already completed
     if quest_id in character['completed_quests']:
         raise QuestAlreadyCompletedError(f"Quest '{quest_id}' already completed.")
 
-    # 4 — Remove from active quests
     character['active_quests'].remove(quest_id)
-
-    # 5 — Add to completed quests
     character['completed_quests'].append(quest_id)
 
-    # 6 — Grant rewards
-    reward_xp = quest['reward_xp']
-    reward_gold = quest['reward_gold']
+    reward_xp = quest.get('REWARD_XP') or quest.get('reward_xp', 0)
+    reward_gold = quest.get('REWARD_GOLD') or quest.get('reward_gold', 0)
 
     character_manager.gain_experience(character, reward_xp)
     character_manager.add_gold(character, reward_gold)
@@ -240,19 +228,17 @@ def can_accept_quest(character, quest_id, quest_data_dict):
 
     quest = quest_data_dict[quest_id]
 
-    if character['level'] < quest['required_level']:
-        return False
+    required_level = quest.get('REQUIRED_LEVEL') or quest.get('required_level')
+    prereq = quest.get('PREREQUISITE') or quest.get('prerequisite')
 
-    prereq = quest['prerequisite']
+    if character['level'] < required_level:
+        return False
     if prereq != "NONE" and prereq not in character['completed_quests']:
         return False
-
     if quest_id in character['completed_quests']:
         return False
-
     if quest_id in character['active_quests']:
         return False
-
     return True
 
 def get_quest_prerequisite_chain(quest_id, quest_data_dict):
