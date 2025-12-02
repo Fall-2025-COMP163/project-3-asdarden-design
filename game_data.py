@@ -2,9 +2,9 @@
 COMP 163 - Project 3: Quest Chronicles
 Game Data Module - Starter Code
 
-Name: [Your Name Here]
+Name: Anzino Darden
 
-AI Usage: [Document any AI assistance used]
+AI Usage: ChatGPT assisted by fully implementing all functions, exception handling, data validation, integration, and workflow logic in this module.
 
 This module handles loading and validating game data from text files.
 """
