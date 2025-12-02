@@ -118,26 +118,41 @@ def load_items(filename="data/items.txt"):
     """
     # TODO: Implement this function
     # Must handle same exceptions as load_quests
-    if not os.path.exists(filename):
-        raise MissingDataFileError(f"Item file '{filename}' not found.")
-    try:
-        with open(filename, "r", encoding="utf-8") as f:
-            content = f.read()
-    except Exception:
-        raise CorruptedDataError(f"Cannot read item file '{filename}'.")
-
     items = {}
+    current = {}
+
     try:
-        blocks = [b for b in content.strip().split("\n\n") if b.strip()]
-        for block in blocks:
-            lines = [line.strip() for line in block.split("\n") if line.strip()]
-            item = parse_item_block(lines)
-            validate_item_data(item)
-            items[item["ITEM_ID"]] = item
-    except InvalidDataFormatError:
-        raise
-    except Exception:
-        raise InvalidDataFormatError(f"Item file '{filename}' format invalid.")
+        with open(filename, "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        raise MissingDataFileError(f"Data file '{filename}' not found.")
+
+    for line in lines + ["\n"]:
+        line = line.strip()
+        if not line:
+            if current:
+                # Normalize keys
+                normalized = {
+                    "item_id": current.get("ITEM_ID"),
+                    "name": current.get("NAME"),
+                    "type": current.get("TYPE"),
+                    "effect": current.get("EFFECT"),
+                    "cost": int(current.get("COST", 0)),
+                    "description": current.get("DESCRIPTION"),
+                }
+
+                if None in normalized.values():
+                    raise InvalidDataFormatError(f"Item missing required field(s): {normalized}")
+
+                items[normalized["item_id"]] = normalized
+                current = {}
+            continue
+
+        if ":" not in line:
+            raise InvalidDataFormatError(f"Invalid line: {line}")
+        key, value = line.split(":", 1)
+        current[key.strip().upper()] = value.strip()
+
     return items
 
 
@@ -183,14 +198,17 @@ def validate_item_data(item_dict):
     """
     # TODO: Implement validation
     
-    required = ["ITEM_ID", "NAME", "TYPE", "EFFECT", "COST", "DESCRIPTION"]
+    required = ["item_id", "name", "type", "effect", "cost", "description"]
     for key in required:
         if key not in item_dict:
             raise InvalidDataFormatError(f"Item missing field '{key}'")
-    if item_dict["TYPE"] not in ["weapon", "armor", "consumable"]:
-        raise InvalidDataFormatError(f"Item type '{item_dict['TYPE']}' invalid")
-    if not isinstance(item_dict["COST"], int):
-        raise InvalidDataFormatError("Item COST must be integer")
+
+    if item_dict["type"] not in ["weapon", "armor", "consumable"]:
+        raise InvalidDataFormatError(f"Item has invalid type '{item_dict['type']}'")
+    
+    if not isinstance(item_dict["cost"], int):
+        raise InvalidDataFormatError(f"Item 'cost' must be an integer")
+
     return True
 
 def create_default_data_files():
