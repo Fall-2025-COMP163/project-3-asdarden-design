@@ -240,7 +240,7 @@ Note: All final balancing, creative decisions, and testing were done manually.
 1. Run the Game
 ```bash
 python main.py
-
+```
 ### Main Menu Options
 
 Option	Function
