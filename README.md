@@ -148,4 +148,118 @@ Test files are provided for your learning but are protected. Modifying test file
 - Automatic zero on the project
 - Academic integrity investigation
 
-You can view tests to understand requirements, but any modifications will be automatically detected.
+## Project Documentation
+
+### Module Architecture
+
+| Module | Responsibility |
+|--------|----------------|
+| `game_data.py` | Loads and validates `/data/items.txt` and `/data/quests.txt`. Handles missing or invalid data with custom exceptions. Can create default files. |
+| `character_manager.py` | Manages character creation, leveling, stats, abilities, and save/load functionality. Supports Warrior, Mage, Rogue, Cleric. |
+| `inventory_system.py` | Manages inventory and equipment, including equip/unequip rules, stat adjustments, and inventory limits. Raises exceptions for invalid actions. |
+| `quest_handler.py` | Loads quests, manages acceptance/completion, rewards XP/gold/items, prevents duplicate acceptance. |
+| `combat_system.py` | Handles turn-based combat, enemy AI, cooldown-based abilities, damage calculation, and rewards. |
+| `custom_exceptions.py` | Defines all custom exception classes used across modules. |
+| `main.py` | Game launcher and menu system. Integrates all modules and manages game loop. |
+
+---
+
+### Exception Strategy
+
+| Category | Examples | Purpose |
+|----------|---------|---------|
+| Data Errors | `InvalidDataFormatError`, `MissingDataFileError` | Prevents gameplay with missing or malformed data files |
+| Character Errors | `InvalidCharacterClassError`, `CharacterNotFoundError` | Validates class selection and saved game loading |
+| Combat Errors | `InvalidTargetError`, `AbilityOnCooldownError`, `CharacterDeadError`, `CombatNotActiveError` | Prevents illegal combat actions and maintains consistent battle state |
+| Inventory Errors | `ItemNotFoundError`, `InventoryFullError` | Ensures inventory integrity and prevents invalid actions |
+| Quest Errors | `QuestNotFoundError`, `QuestAlreadyCompletedError` | Enforces valid quest progression |
+
+**Goal:** Prevent crashes, provide clear error messages, and satisfy automated tests.
+
+---
+
+### Design Choices
+
+1. **Dictionary-Based Characters**  
+   Stores stats, XP, health, gold, abilities. Compatible with save/load files and automated tests.  
+
+2. **Modular Architecture**  
+   Each system is isolated for clarity, easier debugging, and scaling.  
+
+3. **Combat System**  
+   - Turn-based combat with player and enemy turns.  
+   - Level-appropriate enemies: Goblin (Lv1-2), Orc (Lv3-5), Dragon (Lv6+).  
+   - Cooldown-based abilities:  
+     - **Warrior:** Power Strike (2× Strength)  
+     - **Mage:** Fireball (2× Magic)  
+     - **Rogue:** Critical Strike (3× Strength, 50% chance)  
+     - **Cleric:** Heal (+30 HP)  
+
+4. **XP and Leveling**  
+   - Simple XP scaling: `level × 100`.  
+   - Rewards from combat and quests promote progression.  
+
+5. **File-Based Save System**  
+   - Saves in `/data/save_games/`.  
+   - Easy to debug and grading-friendly.  
+
+6. **Inventory System**  
+   - Limits inventory size, applies stat changes, supports equip/use.  
+   - Throws exceptions for invalid actions.  
+
+7. **Extensibility**  
+   - Dictionaries for enemies, items, abilities allow easy expansion.  
+   - Supports adding new mechanics like status effects or rare items.
+
+---
+
+### Class Balance
+
+| Class   | Base HP | Strength | Magic | Special Ability |
+|---------|---------|---------|-------|----------------|
+| Warrior | 120     | 15      | 5     | Power Strike: 2× Strength damage |
+| Mage    | 80      | 5       | 15    | Fireball: 2× Magic damage |
+| Rogue   | 100     | 12      | 5     | Critical Strike: 3× Strength, 50% chance |
+| Cleric  | 90      | 8       | 10    | Heal: Restore 30 HP |
+
+---
+
+### AI Usage
+
+AI was used for:  
+- Implementing and completing combat loops and ability logic  
+- Generating boilerplate for inventory and quest handling  
+- Ensuring exception consistency across modules  
+- Debugging module interactions and data validation  
+- Writing documentation  
+
+Note: All final balancing, creative decisions, and testing were done manually.
+
+### How to Play
+
+1. Run the Game
+```bash
+python main.py
+
+### Main Menu Options
+
+Option	Function
+1. New Game	Create a new character
+2. Load Game	Load an existing save
+3. Explore	Enter combat with enemies
+4. Inventory	View, use, equip, or drop items
+5. Quests	Accept or complete quests
+6. Save Game	Save progress to /data/save_games/
+7. Exit	Quit safely
+
+### Progression
+
+Fight enemies → gain XP and gold
+
+Level up → increase stats and unlock abilities
+
+Complete quests → earn rewards
+
+Manage inventory → equip gear to improve stats
+
+Save → continue later
